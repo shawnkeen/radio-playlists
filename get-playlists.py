@@ -117,11 +117,6 @@ def getDonau3FM(url):
 
 #print sys.stdout.encoding
 
-#print getFM4('FM4', 'http://hop.orf.at/img-trackservice/fm4.html')
-#print getSWR3('SWR3', 'http://www.swr3.de/musik/playlisten/Die-letzten-13-Titel-auf-SWR3/-/id=47424/did=202234/1wuwzys/index.html')
-#print getAntenneBayern('Antenne Bayern', "http://www.antenne.de/musik/song-suche.html")
-#print getBayern3('Bayern3', 'http://www.br.de/radio/bayern3/welle108.html')
-
 
 def printPlaying(stations, lastsongs):
     for station in stations:
