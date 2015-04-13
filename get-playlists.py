@@ -90,7 +90,8 @@ def getDetektorFM(url):
     #print div
     artist = div.xpath('//strong/text()')
     title = div.xpath('//span[@id="musicmarquee"]/text()')
-    return Song(artist[0], title[0].split("/")[0])
+    print artist, title
+    return Song(artist[1], title[0].split("/")[0])
 
 
 def getByteFM(url):
@@ -150,7 +151,7 @@ if len(sys.argv) > 1:
 else:
     delay = 60
 
-#print getDonau3FM('http://www.donau3fm.de/programm/playlist')
+#print getDetektorFM('http://detektor.fm/')
 
 lastsongs = {}
 while True:
