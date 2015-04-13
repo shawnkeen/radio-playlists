@@ -90,7 +90,7 @@ def getDetektorFM(url):
     #print div
     artist = div.xpath('//strong/text()')
     title = div.xpath('//span[@id="musicmarquee"]/text()')
-    print artist, title
+    #print artist, title
     return Song(artist[1], title[0].split("/")[0])
 
 
