@@ -1,0 +1,25 @@
+---
+title: "process"
+author: "Shawn Keen"
+date: "11/04/2015"
+output: html_document
+---
+```{r}
+require(plyr)
+require(reshape2)
+require(ggplot2)
+```
+
+
+```{r}
+data <- read.csv("../songs.csv", header = T, sep = "\t")
+
+
+
+```
+
+
+```{r, echo=FALSE}
+plot(cars)
+```
+

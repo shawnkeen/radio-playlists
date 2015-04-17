@@ -7,8 +7,9 @@ import requests
 import sys
 from kitchen.text.converters import getwriter
 from datetime import datetime
-#from bs4 import BeautifulSoup
+# from bs4 import BeautifulSoup
 #import re
+
 
 UTF8Writer = getwriter('utf8')
 sys.stdout = UTF8Writer(sys.stdout)
@@ -20,7 +21,7 @@ class Song:
         self.artist = artist.strip()
 
     def __str__(self):
-        return self.title.encode("utf-8", "replace").lower() +"\t"+ self.artist.encode("utf-8", "replace").lower()
+        return self.title.encode("utf-8", "replace").lower() + "\t" + self.artist.encode("utf-8", "replace").lower()
 
     # Songs are equal if artist and title are equal
     def __eq__(self, other):
@@ -52,7 +53,7 @@ def getFirstNonEmpty(inputList, num):
         if i <= 0:
             break
     return outputList
-    
+
 
 def getFM4(url):
     page = requests.get(url)
@@ -61,8 +62,8 @@ def getFM4(url):
     tracktitles = tree.xpath('//span[@class="tracktitle"]/text()')
     trackartists = tree.xpath('//span[@class="artist"]/text()')
 
-    trackartist = trackartists[len(trackartists)-1]
-    tracktitle = tracktitles[len(tracktitles)-1]
+    trackartist = trackartists[len(trackartists) - 1]
+    tracktitle = tracktitles[len(tracktitles) - 1]
 
     return Song(trackartist, tracktitle)
 
@@ -116,6 +117,7 @@ def getDonau3FM(url):
     title = element[1]
     return Song(artist, title)
 
+
 #print sys.stdout.encoding
 
 
@@ -125,20 +127,21 @@ def printPlaying(stations, lastsongs):
         url = stations[station][1]
         try:
             song = fun(url)
-            if song == None:
+            if song is None:
                 continue
             if station in lastsongs and lastsongs[station] == song:
                 continue
             lastsongs[station] = song
-            print datetime.utcnow().isoformat(" ") +"\t"+ station +"\t"+ str(song)
+            print datetime.utcnow().isoformat(" ") + "\t" + station + "\t" + str(song)
             sys.stdout.flush()
         except Exception as e:
-            sys.stderr.write('ERROR while fetching from '+station+"\n")
+            sys.stderr.write('ERROR while fetching from ' + station + "\n")
             sys.stderr.write(str(e))
 
 
 stations = {'FM4': (getFM4, 'http://hop.orf.at/img-trackservice/fm4.html'),
-            'SWR3': (getSWR3, 'http://www.swr3.de/musik/playlisten/Die-letzten-13-Titel-auf-SWR3/-/id=47424/did=202234/1wuwzys/index.html'),
+            'SWR3': (getSWR3,
+                     'http://www.swr3.de/musik/playlisten/Die-letzten-13-Titel-auf-SWR3/-/id=47424/did=202234/1wuwzys/index.html'),
             'Antenne Bayern': (getAntenneBayern, 'http://www.antenne.de/musik/song-suche.html'),
             'Bayern3': (getBayern3, 'http://www.br.de/radio/bayern3/welle108.html'),
             'detektor.fm': (getDetektorFM, 'http://detektor.fm/'),
