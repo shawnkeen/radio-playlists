@@ -8,18 +8,36 @@ output: html_document
 require(plyr)
 require(reshape2)
 require(ggplot2)
+require(proxy)
 ```
 
 
 ```{r}
 data <- read.csv("../songs.csv", header = T, sep = "\t")
-
+data <- transform(data, artistid=as.numeric(match(artist, unique(artist))))
 
 
 ```
 
 
 ```{r, echo=FALSE}
-plot(cars)
+numsame <- function(station1, station2) { 
+  length(intersect(subset(data, station==station1)[["artist"]], subset(data, station==station2)[["artist"]])) 
+}
+
+numall <- function(station1, station2) {
+  length(union(subset(data, station == station1)[["artist"]], subset(data, station == station2)[["artist"]]))
+}
+
+station_distance <- function(station1, station2) {
+  numall(station1, station2) / numsame(station1, station2)
+}
+
+stations <- as.list(levels(data$station))
+
+d <- dist(x = stations, method = station_distance)
+h <- hclust(d)
+plot(h, hang = -1, labels = stations)
+
 ```
 
