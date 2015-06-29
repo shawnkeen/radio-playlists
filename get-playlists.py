@@ -5,6 +5,8 @@ __author__ = 'Shawn Keen'
 from lxml import html
 import requests
 import sys
+import json
+import string
 from kitchen.text.converters import getwriter
 from datetime import datetime
 # from bs4 import BeautifulSoup
@@ -40,6 +42,12 @@ def getTag(url, xpathExpression):
     page = requests.get(url)
     tree = html.fromstring(page.text)
     return tree.xpath(xpathExpression)
+
+
+# cheap tag remover
+def deTag(text):
+    tree = html.fromstring(text)
+    return tree.xpath("//text()")
 
 
 def getFirstNonEmpty(inputList, num):
@@ -96,7 +104,13 @@ def getDetektorFM(url):
 
 
 def getByteFM(url):
-    song = getTag(url, '///text()')[1].split("-")
+    jsonpage = requests.get(url)
+    # get json
+    song = json.loads(jsonpage.text)['tracks'][0]
+    # replace separator, if present
+    song = string.replace(song, "&ndash;", "-")
+    # extract from possible html tag and split on separator
+    song = deTag(song)[0].split("-")
     artist = song[0].strip()
     title = song[1].strip()
     if title.lower().strip() == "nachrichten":
@@ -145,18 +159,24 @@ stations = {'FM4': (getFM4, 'http://hop.orf.at/img-trackservice/fm4.html'),
             'Antenne Bayern': (getAntenneBayern, 'http://www.antenne.de/musik/song-suche.html'),
             'Bayern3': (getBayern3, 'http://www.br.de/radio/bayern3/welle108.html'),
             'detektor.fm': (getDetektorFM, 'http://detektor.fm/'),
-            'byte.fm': (getByteFM, 'http://byte.fm/php/content/home/new.php'),
+            'byte.fm': (getByteFM, 'https://byte.fm/ajax/song-history'),
             'Radio7': (getRadio7, 'http://radio7.de/content/html/shared/playlist/index.html'),
             'Donau3FM': (getDonau3FM, 'http://www.donau3fm.de/programm/playlist')}
 
-if len(sys.argv) > 1:
-    delay = int(sys.argv[1])
-else:
-    delay = 60
 
-#print getDetektorFM('http://detektor.fm/')
 
+delay = 60
 lastsongs = {}
-while True:
-    printPlaying(stations, lastsongs)
-    sleep(delay)
+
+if len(sys.argv) > 1 and sys.argv[1] in stations:
+    fun = stations[sys.argv[1]][0]
+    url = stations[sys.argv[1]][1]
+    song = fun(url)
+    print str(song)
+    #delay = int(sys.argv[1])
+else:
+    while True:
+        printPlaying(stations, lastsongs)
+        sleep(delay)
+
+
