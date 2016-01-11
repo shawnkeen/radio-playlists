@@ -133,12 +133,13 @@ def getBayern3():
 
 def getDetektorFM():
     url = 'http://detektor.fm/'
-    div = getTag(url, '//div[@class="nowplaying nowplaying-musikstream hide white"]')[0]
+    div = getMultipleTags(url, ['//div[@class="nowplaying nowplaying-musikstream hide white"]/strong/text()',
+                                '//div[@class="nowplaying nowplaying-musikstream hide white"]/span/text()'])
     #print div
-    artist = div.xpath('//strong/text()')
-    title = div.xpath('//span[@id="musicmarquee"]/text()')
+    artist = div[0][0]
+    title = div[1][1]
     #print artist, title
-    return Song(artist[1], title[0].split("/")[0])
+    return Song(artist, title)
 
 
 def getByteFM():
