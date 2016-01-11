@@ -10,7 +10,7 @@ import string
 from kitchen.text.converters import getwriter
 from datetime import datetime
 # from bs4 import BeautifulSoup
-#import re
+# import re
 
 
 UTF8Writer = getwriter('utf8')
@@ -44,6 +44,15 @@ def getTag(url, xpathExpression):
     return tree.xpath(xpathExpression)
 
 
+def getMultipleTags(url, xpathExpressionList):
+    page = requests.get(url)
+    tree = html.fromstring(page.text)
+    out = []
+    for expression in xpathExpressionList:
+        out.append(tree.xpath(expression))
+    return out
+
+
 # cheap tag remover
 def deTag(text):
     tree = html.fromstring(text)
@@ -63,7 +72,8 @@ def getFirstNonEmpty(inputList, num):
     return outputList
 
 
-def getFM4(url):
+def getFM4():
+    url = 'http://hop.orf.at/img-trackservice/fm4.html'
     page = requests.get(url)
     tree = html.fromstring(page.text)
 
@@ -76,25 +86,53 @@ def getFM4(url):
     return Song(trackartist, tracktitle)
 
 
-def getSWR3(url):
-    result = getFirstNonEmpty(getTag(url, '//a[@rel="x-type:Person"]/text()'), 3)
-    return Song(result[1], result[2])
+def getSWR3():
+    url = 'http://www.swr3.de/musik/playlisten'
+    tags = getMultipleTags(url, ['//ul[@id="nowplaying"]/li/a/text()', '//ul[@id="nowplaying"]/li/text()'])
+    artistRaw = tags[0]
+    titleRaw = tags[1]
+    artist = None
+    title = None
+    if artistRaw and len(artistRaw) > 0:
+        artist = artistRaw[0]
+    if titleRaw and len(titleRaw) > 1:
+        title = titleRaw[1]
+    if artist and title:
+        return Song(artist, title)
+    else:
+        return None
 
 
-def getAntenneBayern(url):
-    result = getTag(url, '//div[@class="left media-info"]/a/text()')
-    return Song(result[1], result[0])
+def getAntenneBayern():
+    url = 'http://www.antenne.de/musik/song-suche.html'
+    result = getMultipleTags(url, ['//p[@class="artist"]/a/text()', '//h2[@class="song_title"]/a/text()'])
+    artistRaw = result[0]
+    titleRaw = result[1]
+    artist = None
+    title = None
+    if artistRaw:
+        artist = artistRaw[0]
+    if titleRaw:
+        title = titleRaw[0]
+    #print title
+    #print artist
+    if artist and title:
+        return Song(artist, title)
+    return None
 
 
-def getBayern3(url):
+def getBayern3():
+    ## The page is a query form, showing the last couple of songs. The last one is the most recent.
+    url = 'https://www.br.de/radio/bayern-3/bayern-3-playlist-musiktitel-recherche-100.html'
     result = getTag(url, '//li[@class="title"]/span/text()')
     #print result
     if len(result) < 2:
         return None
-    return Song(result[0], result[1])
+    return Song(result[-2], result[-1])
 
 
-def getDetektorFM(url):
+def getDetektorFM():
+    url = 'http://detektor.fm/'
     div = getTag(url, '//div[@class="nowplaying nowplaying-musikstream hide white"]')[0]
     #print div
     artist = div.xpath('//strong/text()')
@@ -103,7 +141,8 @@ def getDetektorFM(url):
     return Song(artist[1], title[0].split("/")[0])
 
 
-def getByteFM(url):
+def getByteFM():
+    url = 'https://byte.fm/ajax/song-history'
     jsonpage = requests.get(url)
     # get json
     song = json.loads(jsonpage.text)['tracks'][0]
@@ -118,14 +157,16 @@ def getByteFM(url):
     return Song(artist, title)
 
 
-def getRadio7(url):
+def getRadio7():
+    url = 'http://radio7.de/content/html/shared/playlist/index.html'
     div = getTag(url, '//div[@class="win-pls-track-rgt"]')[0]
     title = div.xpath('//h1/text()')[1]
     artist = div.xpath('//h2/text()')[1]
     return Song(artist, title)
 
 
-def getDonau3FM(url):
+def getDonau3FM():
+    url = 'http://www.donau3fm.de/programm/playlist'
     element = getTag(url, '//div[@id="playlistContent"]//td/text()')
     artist = element[2]
     title = element[1]
@@ -137,10 +178,9 @@ def getDonau3FM(url):
 
 def printPlaying(stations, lastsongs):
     for station in stations:
-        fun = stations[station][0]
-        url = stations[station][1]
+        fun = stations[station]
         try:
-            song = fun(url)
+            song = fun()
             if song is None:
                 continue
             if station in lastsongs and lastsongs[station] == song:
@@ -153,30 +193,30 @@ def printPlaying(stations, lastsongs):
             sys.stderr.write(str(e))
 
 
-stations = {'FM4': (getFM4, 'http://hop.orf.at/img-trackservice/fm4.html'),
-            'SWR3': (getSWR3,
-                     'http://www.swr3.de/musik/playlisten/Die-letzten-13-Titel-auf-SWR3/-/id=47424/did=202234/1wuwzys/index.html'),
-            'Antenne Bayern': (getAntenneBayern, 'http://www.antenne.de/musik/song-suche.html'),
-            'Bayern3': (getBayern3, 'http://www.br.de/radio/bayern3/welle108.html'),
-            'detektor.fm': (getDetektorFM, 'http://detektor.fm/'),
-            'byte.fm': (getByteFM, 'https://byte.fm/ajax/song-history'),
-            'Radio7': (getRadio7, 'http://radio7.de/content/html/shared/playlist/index.html'),
-            'Donau3FM': (getDonau3FM, 'http://www.donau3fm.de/programm/playlist')}
+def main():
+
+    stations = {'FM4': getFM4,
+                'SWR3': getSWR3,
+                'Antenne Bayern': getAntenneBayern,
+                'Bayern3': getBayern3,
+                'detektor.fm': getDetektorFM,
+                'byte.fm': getByteFM,
+                'Radio7': getRadio7,
+                'Donau3FM': getDonau3FM}
+
+    delay = 60
+    lastsongs = {}
+
+    if len(sys.argv) > 1 and sys.argv[1] in stations:
+        fun = stations[sys.argv[1]]
+        song = fun()
+        print str(song)
+        #delay = int(sys.argv[1])
+    else:
+        while True:
+            printPlaying(stations, lastsongs)
+            sleep(delay)
 
 
-
-delay = 60
-lastsongs = {}
-
-if len(sys.argv) > 1 and sys.argv[1] in stations:
-    fun = stations[sys.argv[1]][0]
-    url = stations[sys.argv[1]][1]
-    song = fun(url)
-    print str(song)
-    #delay = int(sys.argv[1])
-else:
-    while True:
-        printPlaying(stations, lastsongs)
-        sleep(delay)
-
-
+if __name__ == "__main__":
+    main()
