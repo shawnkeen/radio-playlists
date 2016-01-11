@@ -88,7 +88,8 @@ def getFM4():
 
 def getSWR3():
     url = 'http://www.swr3.de/musik/playlisten'
-    tags = getMultipleTags(url, ['//ul[@id="nowplaying"]/li/a/text()', '//ul[@id="nowplaying"]/li/text()'])
+    tags = getMultipleTags(url, ['//ul[@id="nowplaying"]/li/strong/text()', '//ul[@id="nowplaying"]/li/text()'])
+    #print tags
     artistRaw = tags[0]
     titleRaw = tags[1]
     artist = None
