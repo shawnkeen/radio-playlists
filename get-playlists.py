@@ -38,14 +38,16 @@ class Station:
         self.getter = getter
 
 
-def getTag(url, xpathExpression):
-    page = requests.get(url)
+def getTag(url, xpathExpression, params=None):
+    headers = {'User-Agent': 'curl/7.35.0'}
+    page = requests.get(url, params=params, headers=headers)
+    #print page.text
     tree = html.fromstring(page.text)
     return tree.xpath(xpathExpression)
 
 
-def getMultipleTags(url, xpathExpressionList):
-    page = requests.get(url)
+def getMultipleTags(url, xpathExpressionList, params=None):
+    page = requests.get(url, params=params)
     tree = html.fromstring(page.text)
     out = []
     for expression in xpathExpressionList:
@@ -80,8 +82,8 @@ def getFM4():
     tracktitles = tree.xpath('//span[@class="tracktitle"]/text()')
     trackartists = tree.xpath('//span[@class="artist"]/text()')
 
-    trackartist = trackartists[len(trackartists) - 1]
-    tracktitle = tracktitles[len(tracktitles) - 1]
+    trackartist = trackartists[-1]
+    tracktitle = tracktitles[-1]
 
     return Song(trackartist, tracktitle)
 
@@ -168,11 +170,20 @@ def getRadio7():
 
 
 def getDonau3FM():
-    url = 'http://www.donau3fm.de/programm/playlist'
-    element = getTag(url, '//div[@id="playlistContent"]//td/text()')
-    artist = element[2]
-    title = element[1]
-    return Song(artist, title)
+    #url = 'http://www.donau3fm.de/programm/playlist'
+    date = datetime.now()
+    url = 'http://www.donau3fm.de/wp-content/themes/ex-studios-2015/playlist/getplaylist.php'
+    params = {'pl_time_m': str(date.minute)}
+    element = getTag(url=url, params=params, xpathExpression='//table//td/text()')
+    #print element
+    artist = None
+    title = None
+    if len(element) >= 3:
+        artist = element[2]
+        title = element[1]
+    if artist and title:
+        return Song(artist, title)
+    return None
 
 
 #print sys.stdout.encoding
