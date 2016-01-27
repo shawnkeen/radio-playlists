@@ -259,8 +259,10 @@ def printPlaying(stations, lastsongs):
             print datetime.utcnow().isoformat(" ") + "\t" + station + "\t" + str(song)
             sys.stdout.flush()
         except Exception as e:
-            sys.stderr.write('ERROR while fetching from ' + station + "\n")
-            sys.stderr.write(str(e))
+            sys.stderr.write('ERROR while fetching from ' + station + ": ")
+            sys.stderr.flush()
+            sys.stderr.write(str(e)+"\n")
+            sys.stderr.flush()
 
 
 def main():
