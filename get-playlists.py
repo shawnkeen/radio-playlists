@@ -1,7 +1,7 @@
+# -*- coding: utf-8 -*-
 from time import sleep
 
 __author__ = 'Shawn Keen'
-# -*- coding: utf-8 -*-
 from lxml import html
 import requests
 import sys
@@ -18,27 +18,47 @@ sys.stdout = UTF8Writer(sys.stdout)
 
 
 class Song:
+    """
+    A song consists of a title and an artist.
+    """
     def __init__(self, title, artist):
+        """
+        :param title: the song's title as string
+        :param artist: the song's artist as string
+        """
         self.title = title.strip()
         self.artist = artist.strip()
 
     def __str__(self):
+        """
+        Return artist and title as lowercase, utf-8 encoded, and separated by a TAB (\t).
+        """
         return self.title.encode("utf-8", "replace").lower() + "\t" + self.artist.encode("utf-8", "replace").lower()
 
-    # Songs are equal if artist and title are equal
     def __eq__(self, other):
+        """
+        Songs are qual if both artist and title are equal.
+        """
         if isinstance(other, self.__class__):
             return self.artist == other.artist and self.title == other.title
 
 
-class Station:
-    def __init__(self, stationID, url, getter):
-        self.stationID = stationID
-        self.url = url
-        self.getter = getter
+# class Station:
+# def __init__(self, stationID, url, getter):
+#         self.stationID = stationID
+#         self.url = url
+#         self.getter = getter
 
 
 def getTag(url, xpathExpression, params=None):
+    """
+    Get the tag entry described by a given xpath expression after fetching from a url.
+
+    :param url: string with url
+    :param xpathExpression: an xpath expression as string
+    :param params: optional parameters for requests.get()
+    :return: a string containing entries found using the xpath expression
+    """
     headers = {'User-Agent': 'curl/7.35.0'}
     page = requests.get(url, params=params, headers=headers)
     #print page.encoding
@@ -47,6 +67,14 @@ def getTag(url, xpathExpression, params=None):
 
 
 def getMultipleTags(url, xpathExpressionList, params=None):
+    """
+    Perform one query on the given url, but extract multiple entries using several xpath expressions.
+
+    :param url: URL to fetch from
+    :param xpathExpressionList: a list of xpath expressions
+    :param params: optional parameters for the http retrieval from the URL
+    :return: a list of entries, one for each xpath expression
+    """
     page = requests.get(url, params=params)
     tree = html.fromstring(page.text)
     out = []
@@ -57,11 +85,23 @@ def getMultipleTags(url, xpathExpressionList, params=None):
 
 # cheap tag remover
 def deTag(text):
+    """
+    Remove the tags from a html input.
+    :param text: A string containing html formatted text.
+    :return: A string without surrounding tags.
+    """
     tree = html.fromstring(text)
     return tree.xpath("//text()")
 
 
 def getFirstNonEmpty(inputList, num):
+    """
+    Get the first non-empty items in a list of strings.
+
+    :param inputList: A list of possibly empty strings.
+    :param num: The number of items to get at most.
+    :return: A list of non-empty strings or an empty list, if no non-empty strings were found.
+    """
     i = num
     outputList = []
     for item in inputList:
@@ -75,6 +115,11 @@ def getFirstNonEmpty(inputList, num):
 
 
 def getFM4():
+    """
+    Fetch the currently playing song for FM4.
+
+    :return: A Song, if fetching went whithout error. Return None otherwise.
+    """
     url = 'http://hop.orf.at/img-trackservice/fm4.html'
     page = requests.get(url)
     tree = html.fromstring(page.text)
@@ -92,6 +137,11 @@ def getFM4():
 
 
 def getSWR3():
+    """
+    Fetch the currently playing song for SWR3.
+
+    :return: A Song, if fetching went whithout error. Return None otherwise.
+    """
     url = 'http://www.swr3.de/musik/playlisten'
     ## The artist is encapsulated either in a <strong> or <a>, the title is the trailing rest of the same <li>.
     ## We try both versions for the artist. First is the <strong>. If this fails, the first list is empty.
@@ -113,6 +163,11 @@ def getSWR3():
 
 
 def getAntenneBayern():
+    """
+    Fetch the currently playing song for Antenne Bayern.
+
+    :return: A Song, if fetching went whithout error. Return None otherwise.
+    """
     url = 'http://www.antenne.de/musik/song-suche.html'
     result = getMultipleTags(url, ['//p[@class="artist"]/a/text()', '//h2[@class="song_title"]/a/text()'])
     artistRaw = result[0]
@@ -131,6 +186,11 @@ def getAntenneBayern():
 
 
 def getBayern3():
+    """
+    Fetch the currently playing song for Bayern3.
+
+    :return: A Song, if fetching went whithout error. Return None otherwise.
+    """
     ## The page is a query form, showing the last couple of songs. The last one is the most recent.
     url = 'https://www.br.de/radio/bayern-3/bayern-3-playlist-musiktitel-recherche-100.html'
     result = getTag(url, '//li[@class="title"]/span/text()')
@@ -141,6 +201,11 @@ def getBayern3():
 
 
 def getDetektorFM():
+    """
+    Fetch the currently playing song for Detektor FM.
+
+    :return: A Song, if fetching went whithout error. Return None otherwise.
+    """
     url = 'http://detektor.fm/'
     div = getMultipleTags(url, ['//div[@class="nowplaying nowplaying-musikstream hide white"]/strong/text()',
                                 '//div[@class="nowplaying nowplaying-musikstream hide white"]/span/text()'])
@@ -157,6 +222,11 @@ def getDetektorFM():
 
 
 def getByteFM():
+    """
+    Fetch the currently playing song for ByteFM.
+
+    :return: A Song, if fetching went whithout error. Return None otherwise.
+    """
     url = 'https://byte.fm/ajax/song-history'
     jsonpage = requests.get(url)
     # get json
@@ -176,6 +246,11 @@ def getByteFM():
 
 
 def getRadio7():
+    """
+    Fetch the currently playing song for Radio7.
+
+    :return: A Song, if fetching went whithout error. Return None otherwise.
+    """
     url = 'http://radio7.de/content/html/shared/playlist/index.html'
     div = getTag(url, '//div[@class="win-pls-track-rgt"]')[0]
     title = div.xpath('//h1/text()')[1]
@@ -184,6 +259,11 @@ def getRadio7():
 
 
 def getDonau3FM():
+    """
+    Fetch the currently playing song for Donau3 FM.
+
+    :return: A Song, if fetching went whithout error. Return None otherwise.
+    """
     #url = 'http://www.donau3fm.de/programm/playlist'
     date = datetime.now()
     url = 'http://www.donau3fm.de/wp-content/themes/ex-studios-2015/playlist/getplaylist.php'
@@ -201,6 +281,11 @@ def getDonau3FM():
 
 
 def getFritz():
+    """
+    Fetch the currently playing song for Fritz.de radio.
+
+    :return: A Song, if fetching went without error. Return None otherwise.
+    """
     url = 'http://www.fritz.de/musik/playlists/index.html'
     tag = getTag(url, '//table[@class="playlist_aktueller_tag"]')
     if tag:
@@ -215,6 +300,11 @@ def getFritz():
 
 
 def getRadioKoeln():
+    """
+    Fetch the currently playing song for Radio Köln.
+
+    :return: A Song, if fetching went without error. Return None otherwise.
+    """
     url = 'http://www.radiokoeln.de/'
     tag = getTag(url, '//div[@id="playlist_title"]')[0]
     artist = tag.xpath('.//div/b/text()')
@@ -237,6 +327,11 @@ def getRadioKoeln():
 
 
 def get1Live():
+    """
+    Fetch the currently playing song for 1Live.
+
+    :return: A Song, if fetching went without error. Return None otherwise.
+    """
     url = 'http://www.einslive.de/einslive/musik/playlist/playlist284.html'
     tag = getTag(url, '//div[@class="playlist"]')[0]
     artist = tag.xpath('.//td/strong/text()')
@@ -247,6 +342,22 @@ def get1Live():
 
 
 def printPlaying(stations, lastsongs):
+    """
+    tag = getTag(url, '//div[@class="playlist"]')[0]
+    artist = tag.xpath('.//td/strong/text()')
+    title = tag.xpath('.//td/text()')
+    if artist and title:
+        return Song(artist[0], title[0])
+    return None
+
+    Iterate over all stations and use the associated fetch function to get
+    the currently played song. The song is only printed if it does not
+    appear in the lastsongs dictionary under that station.
+
+    :param stations: dictionary station name -> fetch function
+    :param lastsongs: dictionary station name -> last played song
+    :return: None
+    """
     for station in stations:
         fun = stations[station]
         try:
