@@ -197,8 +197,8 @@ def scrape_bayern3():
     """
     # The page is a query form, showing the last couple of songs.
     # The last one is the most recent.
-    url = 'https://www.br.de'
-    '/radio/bayern-3/bayern-3-playlist-musiktitel-recherche-100.html'
+    url = 'https://www.br.de' \
+        '/radio/bayern-3/bayern-3-playlist-musiktitel-recherche-100.html'
 
     result = get_tag(url, '//li[@class="title"]/span/text()')
     if len(result) < 2:
@@ -280,14 +280,11 @@ def scrape_donau_3_fm():
 
     :return: A Song, if scraping went whithout error. Return None otherwise.
     """
-    date = datetime.now()
 
-    url = 'http://www.donau3fm.de/'
-    'wp-content/themes/ex-studios-2015/playlist/getplaylist.php'
+    url = 'http://www.donau3fm.de/' \
+        'wp-content/themes/ex-studios-2015/playlist/getplaylist.php'
 
-    params = {'pl_time_m': str(date.minute)}
     element = get_tag(url=url,
-                      params=params,
                       xpathExpression='//table//td/text()')
     artist = None
     title = None
@@ -389,6 +386,9 @@ def print_playing_songs(stations, lastsongs):
         try:
             song = fun()
             if song is None:
+                sys.stderr.write("ERROR while fetching from " + station +
+                                 ": empty response\n")
+                sys.stderr.flush()
                 continue
             if station in lastsongs and lastsongs[station] == song:
                 continue
