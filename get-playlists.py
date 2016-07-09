@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 from time import sleep
-
-__author__ = 'Shawn Keen'
 from lxml import html
 import requests
 import sys
@@ -12,6 +10,7 @@ from datetime import datetime
 # from bs4 import BeautifulSoup
 # import re
 
+__author__ = 'Shawn Keen'
 
 UTF8Writer = getwriter('utf8')
 sys.stdout = UTF8Writer(sys.stdout)
@@ -31,9 +30,11 @@ class Song:
 
     def __str__(self):
         """
-        Return artist and title as lowercase, utf-8 encoded, and separated by a TAB (\t).
+        Return artist and title as lowercase, utf-8 encoded, and separated by a
+        TAB (\t).
         """
-        return self.title.encode("utf-8", "replace").lower() + "\t" + self.artist.encode("utf-8", "replace").lower()
+        return self.title.encode("utf-8", "replace").lower() + \
+            "\t" + self.artist.encode("utf-8", "replace").lower()
 
     def __eq__(self, other):
         """
@@ -50,9 +51,10 @@ class Song:
 #         self.getter = getter
 
 
-def getTag(url, xpathExpression, params=None):
+def get_tag(url, xpathExpression, params=None):
     """
-    Get the tag entry described by a given xpath expression after fetching from a url.
+    Get the tag entry described by a given xpath expression after fetching
+    from a url.
 
     :param url: string with url
     :param xpathExpression: an xpath expression as string
@@ -61,14 +63,14 @@ def getTag(url, xpathExpression, params=None):
     """
     headers = {'User-Agent': 'curl/7.35.0'}
     page = requests.get(url, params=params, headers=headers)
-    #print page.encoding
     tree = html.fromstring(page.content)
     return tree.xpath(xpathExpression)
 
 
-def getMultipleTags(url, xpathExpressionList, params=None):
+def get_multiple_tags(url, xpathExpressionList, params=None):
     """
-    Perform one query on the given url, but extract multiple entries using several xpath expressions.
+    Perform one query on the given url, but extract multiple entries using
+    several xpath expressions.
 
     :param url: URL to fetch from
     :param xpathExpressionList: a list of xpath expressions
@@ -84,7 +86,7 @@ def getMultipleTags(url, xpathExpressionList, params=None):
 
 
 # cheap tag remover
-def deTag(text):
+def remove_tags(text):
     """
     Remove the tags from a html input.
     :param text: A string containing html formatted text.
@@ -94,13 +96,14 @@ def deTag(text):
     return tree.xpath("//text()")
 
 
-def getFirstNonEmpty(inputList, num):
+def get_first_non_empty(inputList, num):
     """
     Get the first non-empty items in a list of strings.
 
     :param inputList: A list of possibly empty strings.
     :param num: The number of items to get at most.
-    :return: A list of non-empty strings or an empty list, if no non-empty strings were found.
+    :return: A list of non-empty strings or an empty list, if no non-empty
+        strings were found.
     """
     i = num
     outputList = []
@@ -114,11 +117,11 @@ def getFirstNonEmpty(inputList, num):
     return outputList
 
 
-def getFM4():
+def scrape_fm4():
     """
     Fetch the currently playing song for FM4.
 
-    :return: A Song, if fetching went whithout error. Return None otherwise.
+    :return: A Song, if scraping went whithout error. Return None otherwise.
     """
     url = 'http://hop.orf.at/img-trackservice/fm4.html'
     page = requests.get(url)
@@ -131,23 +134,28 @@ def getFM4():
         trackartist = trackartists[-1]
         tracktitle = tracktitles[-1]
         return Song(trackartist, tracktitle)
-    #else
-    sys.stderr.write("ERROR in fm4: "+str(tracktitles)+" "+str(trackartists)+"\n")
+    sys.stderr.write(
+        "ERROR in fm4: " +
+        str(tracktitles) +
+        " " +
+        str(trackartists)+"\n")
     return None
 
 
-def getSWR3():
+def scrape_swr3():
     """
     Fetch the currently playing song for SWR3.
 
-    :return: A Song, if fetching went whithout error. Return None otherwise.
+    :return: A Song, if scraping went whithout error. Return None otherwise.
     """
     url = 'http://www.swr3.de/musik/playlisten'
-    ## The artist is encapsulated either in a <strong> or <a>, the title is the trailing rest of the same <li>.
-    ## We try both versions for the artist. First is the <strong>. If this fails, the first list is empty.
-    tags = getMultipleTags(url, ['//ul[@id="nowplaying"]/li/strong/text()',
-                                 '//ul[@id="nowplaying"]/li/a/text()',
-                                 '//ul[@id="nowplaying"]/li/text()'])
+    # The artist is encapsulated either in a <strong> or <a>,
+    # the title is the trailing rest of the same <li>.
+    # We try both versions for the artist. First is the <strong>.
+    # If this fails, the first list is empty.
+    tags = get_multiple_tags(url, ['//ul[@id="nowplaying"]/li/strong/text()',
+                                   '//ul[@id="nowplaying"]/li/a/text()',
+                                   '//ul[@id="nowplaying"]/li/text()'])
     if tags[0]:
         artistRaw = tags[0]
     else:
@@ -157,19 +165,19 @@ def getSWR3():
         artist = artistRaw[0]
         title = titleRaw[1]
         return Song(artist, title)
-    #else
     sys.stderr.write("ERROR in swr3: "+str(artistRaw)+" "+str(titleRaw)+"\n")
     return None
 
 
-def getAntenneBayern():
+def scrape_antenne_bayern():
     """
     Fetch the currently playing song for Antenne Bayern.
 
-    :return: A Song, if fetching went whithout error. Return None otherwise.
+    :return: A Song, if scraping went whithout error. Return None otherwise.
     """
     url = 'http://www.antenne.de/musik/song-suche.html'
-    result = getMultipleTags(url, ['//p[@class="artist"]/a/text()', '//h2[@class="song_title"]/a/text()'])
+    result = get_multiple_tags(url, ['//p[@class="artist"]/a/text()',
+                                     '//h2[@class="song_title"]/a/text()'])
     artistRaw = result[0]
     titleRaw = result[1]
     artist = None
@@ -178,54 +186,61 @@ def getAntenneBayern():
         artist = artistRaw[0]
     if titleRaw:
         title = titleRaw[0]
-    #print title
-    #print artist
     if artist and title:
         return Song(artist, title)
     return None
 
 
-def getBayern3():
+def scrape_bayern3():
     """
     Fetch the currently playing song for Bayern3.
 
-    :return: A Song, if fetching went whithout error. Return None otherwise.
+    :return: A Song, if scraping went whithout error. Return None otherwise.
     """
-    ## The page is a query form, showing the last couple of songs. The last one is the most recent.
-    url = 'https://www.br.de/radio/bayern-3/bayern-3-playlist-musiktitel-recherche-100.html'
-    result = getTag(url, '//li[@class="title"]/span/text()')
-    #print result
+    # The page is a query form, showing the last couple of songs.
+    # The last one is the most recent.
+    url = 'https://www.br.de'
+    '/radio/bayern-3/bayern-3-playlist-musiktitel-recherche-100.html'
+
+    result = get_tag(url, '//li[@class="title"]/span/text()')
     if len(result) < 2:
         return None
     return Song(result[-2], result[-1])
 
 
-def getDetektorFM():
+def scrape_detektor_fm():
     """
     Fetch the currently playing song for Detektor FM.
 
-    :return: A Song, if fetching went whithout error. Return None otherwise.
+    :return: A Song, if scraping went whithout error. Return None otherwise.
     """
     url = 'http://detektor.fm/'
-    div = getMultipleTags(url, ['//div[@class="nowplaying nowplaying-musikstream hide white"]/strong/text()',
-                                '//div[@class="nowplaying nowplaying-musikstream hide white"]/span/text()'])
-    if len(div) >= 2 and isinstance(div[0], list) and isinstance(div[1], list) and div[0] and len(div[1]) >= 2:
+    div = get_multiple_tags(
+        url, ['//div[@class="nowplaying nowplaying-musikstream hide white"]'
+              '/strong/text()',
+              '//div[@class="nowplaying nowplaying-musikstream hide white"]'
+              '/span/text()'])
+
+    if len(div) >= 2 \
+            and isinstance(div[0], list) \
+            and isinstance(div[1], list) \
+            and div[0] \
+            and len(div[1]) >= 2:
         artist = div[0][0]
         title = div[1][1]
         if '/' in title:
             title = title.split('/')[0]
-        #print artist, title
         return Song(artist, title)
-    #else
+
     sys.stderr.write("ERROR in detektor.fm: "+str(div)+"\n")
     return None
 
 
-def getByteFM():
+def scrape_byte_fm():
     """
     Fetch the currently playing song for ByteFM.
 
-    :return: A Song, if fetching went whithout error. Return None otherwise.
+    :return: A Song, if scraping went whithout error. Return None otherwise.
     """
     url = 'https://byte.fm/ajax/song-history'
     jsonpage = requests.get(url)
@@ -234,7 +249,7 @@ def getByteFM():
     # replace separator, if present
     song = string.replace(song, "&ndash;", "-")
     # extract from possible html tag and split on separator
-    song = deTag(song)[0].split("-")
+    song = remove_tags(song)[0].split("-")
     if not song or len(song) < 2:
         sys.stderr.write("ERROR in byteFM: "+str(song)+"\n")
         return None
@@ -245,31 +260,34 @@ def getByteFM():
     return Song(artist, title)
 
 
-def getRadio7():
+def scrape_radio7():
     """
     Fetch the currently playing song for Radio7.
 
-    :return: A Song, if fetching went whithout error. Return None otherwise.
+    :return: A Song, if scraping went whithout error. Return None otherwise.
     """
     url = 'http://radio7.de/content/html/shared/playlist/index.html'
-    div = getTag(url, '//div[@class="win-pls-track-rgt"]')[0]
+    div = get_tag(url, '//div[@class="win-pls-track-rgt"]')[0]
     title = div.xpath('//h1/text()')[1]
     artist = div.xpath('//h2/text()')[1]
     return Song(artist, title)
 
 
-def getDonau3FM():
+def scrape_donau_3_fm():
     """
     Fetch the currently playing song for Donau3 FM.
 
-    :return: A Song, if fetching went whithout error. Return None otherwise.
+    :return: A Song, if scraping went whithout error. Return None otherwise.
     """
-    #url = 'http://www.donau3fm.de/programm/playlist'
     date = datetime.now()
-    url = 'http://www.donau3fm.de/wp-content/themes/ex-studios-2015/playlist/getplaylist.php'
+
+    url = 'http://www.donau3fm.de/'
+    'wp-content/themes/ex-studios-2015/playlist/getplaylist.php'
+
     params = {'pl_time_m': str(date.minute)}
-    element = getTag(url=url, params=params, xpathExpression='//table//td/text()')
-    #print element
+    element = get_tag(url=url,
+                      params=params,
+                      xpathExpression='//table//td/text()')
     artist = None
     title = None
     if len(element) >= 3:
@@ -280,14 +298,14 @@ def getDonau3FM():
     return None
 
 
-def getFritz():
+def scrape_fritz():
     """
     Fetch the currently playing song for Fritz.de radio.
 
-    :return: A Song, if fetching went without error. Return None otherwise.
+    :return: A Song, if scraping went without error. Return None otherwise.
     """
     url = 'http://www.fritz.de/musik/playlists/index.html'
-    tag = getTag(url, '//table[@class="playlist_aktueller_tag"]')
+    tag = get_tag(url, '//table[@class="playlist_aktueller_tag"]')
     if tag:
         tag = tag[0]
     else:
@@ -299,24 +317,22 @@ def getFritz():
     return None
 
 
-def getRadioKoeln():
+def scrape_radio_koeln():
     """
     Fetch the currently playing song for Radio Köln.
 
-    :return: A Song, if fetching went without error. Return None otherwise.
+    :return: A Song, if scraping went without error. Return None otherwise.
     """
     url = 'http://www.radiokoeln.de/'
-    tag = getTag(url, '//div[@id="playlist_title"]')[0]
+    tag = get_tag(url, '//div[@id="playlist_title"]')[0]
     artist = tag.xpath('.//div/b/text()')
     title = tag.xpath('.//div/text()')
-    #print artist, title
     tmp = title
     title = []
     for item in tmp:
         s = item.strip()
         if s:
             title.append(s)
-    #print title
     if artist and title:
         artist = artist[0]
         title = title[-1]
@@ -326,14 +342,14 @@ def getRadioKoeln():
     return None
 
 
-def get1Live():
+def scrape_1live():
     """
     Fetch the currently playing song for 1Live.
 
-    :return: A Song, if fetching went without error. Return None otherwise.
+    :return: A Song, if scraping went without error. Return None otherwise.
     """
     url = 'http://www.einslive.de/einslive/musik/playlist/playlist284.html'
-    tag = getTag(url, '//div[@class="playlist"]')[0]
+    tag = get_tag(url, '//div[@class="playlist"]')[0]
     artist = tag.xpath('.//td/strong/text()')
     title = tag.xpath('.//td/text()')
     if artist and title:
@@ -341,20 +357,20 @@ def get1Live():
     return None
 
 
-def printPlaying(stations, lastsongs):
+def print_playing_songs(stations, lastsongs):
     """
-    tag = getTag(url, '//div[@class="playlist"]')[0]
+    tag = get_tag(url, '//div[@class="playlist"]')[0]
     artist = tag.xpath('.//td/strong/text()')
     title = tag.xpath('.//td/text()')
     if artist and title:
         return Song(artist[0], title[0])
     return None
 
-    Iterate over all stations and use the associated fetch function to get
+    Iterate over all stations and use the associated scrape function to get
     the currently played song. The song is only printed if it does not
     appear in the lastsongs dictionary under that station.
 
-    :param stations: dictionary station name -> fetch function
+    :param stations: dictionary station name -> scrape function
     :param lastsongs: dictionary station name -> last played song
     :return: None
     """
@@ -367,7 +383,9 @@ def printPlaying(stations, lastsongs):
             if station in lastsongs and lastsongs[station] == song:
                 continue
             lastsongs[station] = song
-            print datetime.utcnow().isoformat(" ") + "\t" + station + "\t" + str(song)
+            print datetime.utcnow().isoformat(" ") + "\t" + \
+                station + "\t" + \
+                str(song)
             sys.stdout.flush()
         except Exception as e:
             sys.stderr.write('ERROR while fetching from ' + station + ": ")
@@ -378,17 +396,17 @@ def printPlaying(stations, lastsongs):
 
 def main():
 
-    stations = {'FM4': getFM4,
-                'SWR3': getSWR3,
-                'Antenne Bayern': getAntenneBayern,
-                'Bayern3': getBayern3,
-                'detektor.fm': getDetektorFM,
-                'byte.fm': getByteFM,
-                'Radio7': getRadio7,
-                'Donau3FM': getDonau3FM,
-                'Fritz': getFritz,
-                'RadioKoeln': getRadioKoeln,
-                '1Live': get1Live}
+    stations = {'FM4': scrape_fm4,
+                'SWR3': scrape_swr3,
+                'Antenne Bayern': scrape_antenne_bayern,
+                'Bayern3': scrape_bayern3,
+                'detektor.fm': scrape_detektor_fm,
+                'byte.fm': scrape_byte_fm,
+                'Radio7': scrape_radio7,
+                'Donau3FM': scrape_donau_3_fm,
+                'Fritz': scrape_fritz,
+                'RadioKoeln': scrape_radio_koeln,
+                '1Live': scrape_1live}
 
     delay = 60
     lastsongs = {}
@@ -397,10 +415,9 @@ def main():
         fun = stations[sys.argv[1]]
         song = fun()
         print str(song)
-        #delay = int(sys.argv[1])
     else:
         while True:
-            printPlaying(stations, lastsongs)
+            print_playing_songs(stations, lastsongs)
             sleep(delay)
 
 
