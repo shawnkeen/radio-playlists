@@ -44,13 +44,6 @@ class Song:
             return self.artist == other.artist and self.title == other.title
 
 
-# class Station:
-# def __init__(self, stationID, url, getter):
-#         self.stationID = stationID
-#         self.url = url
-#         self.getter = getter
-
-
 def get_tag(url, xpathExpression, params=None):
     """
     Get the tag entry described by a given xpath expression after fetching
@@ -60,9 +53,11 @@ def get_tag(url, xpathExpression, params=None):
     :param xpathExpression: an xpath expression as string
     :param params: optional parameters for requests.get()
     :return: a string containing entries found using the xpath expression
+    :raises: requests.exceptions.HTTPError, if one occured
     """
     headers = {'User-Agent': 'curl/7.35.0'}
     page = requests.get(url, params=params, headers=headers)
+    page.raise_for_status()
     tree = html.fromstring(page.content)
     return tree.xpath(xpathExpression)
 
@@ -76,8 +71,11 @@ def get_multiple_tags(url, xpathExpressionList, params=None):
     :param xpathExpressionList: a list of xpath expressions
     :param params: optional parameters for the http retrieval from the URL
     :return: a list of entries, one for each xpath expression
+    :raises: requests.exceptions.HTTPError, if one occured
     """
-    page = requests.get(url, params=params)
+    headers = {'User-Agent': 'curl/7.35.0'}
+    page = requests.get(url, params=params, headers=headers)
+    page.raise_for_status()
     tree = html.fromstring(page.text)
     out = []
     for expression in xpathExpressionList:
@@ -214,20 +212,23 @@ def scrape_detektor_fm():
 
     :return: A Song, if scraping went whithout error. Return None otherwise.
     """
-    url = 'http://detektor.fm/'
+    # The landing page shows the currently played songs for both channels
+    # "Wort" and "Musik". We pinpoint the "Musik" part. The artist is printed
+    # in a <strong> and the title is encapsulated in a span.
+    url = 'https://detektor.fm'
     div = get_multiple_tags(
         url, ['//div[@class="nowplaying nowplaying-musikstream hide white"]'
               '/strong/text()',
               '//div[@class="nowplaying nowplaying-musikstream hide white"]'
-              '/span/text()'])
+              '/span[@id="musicmarquee"]/text()'])
 
     if len(div) >= 2 \
             and isinstance(div[0], list) \
             and isinstance(div[1], list) \
             and div[0] \
-            and len(div[1]) >= 2:
+            and div[1]:
         artist = div[0][0]
-        title = div[1][1]
+        title = div[1][0]
         if '/' in title:
             title = title.split('/')[0]
         return Song(artist, title)
@@ -348,12 +349,21 @@ def scrape_1live():
 
     :return: A Song, if scraping went without error. Return None otherwise.
     """
-    url = 'http://www.einslive.de/einslive/musik/playlist/playlist284.html'
-    tag = get_tag(url, '//div[@class="playlist"]')[0]
-    artist = tag.xpath('.//td/strong/text()')
-    title = tag.xpath('.//td/text()')
+
+    # The page contains a table of recently played songs, with the first row
+    # being the most recent. Every <td class="entry"> is either artist or
+    # title. We extract the first two entries as artist and title.
+    url = 'http://www1.wdr.de/radio/1live/musik/1live-playlist/index.html'
+    tag = get_tag(
+        url,
+        '//table[@summary="WDR3 - Playliste"]//td[@class="entry"]/text()')
+    if not tag and not isinstance(tag, list):
+        sys.stderr.write("ERROR in 1live:" + str(tag) + "\n")
+        return
+    artist = tag[0].strip()
+    title = tag[1].strip()
     if artist and title:
-        return Song(artist[0], title[0])
+        return Song(artist, title)
     return None
 
 
@@ -396,17 +406,19 @@ def print_playing_songs(stations, lastsongs):
 
 def main():
 
-    stations = {'FM4': scrape_fm4,
-                'SWR3': scrape_swr3,
-                'Antenne Bayern': scrape_antenne_bayern,
-                'Bayern3': scrape_bayern3,
+    # We use dotted notation here to make it easier for R to import the
+    # station names as factors.
+    stations = {'fm4': scrape_fm4,
+                'swr3': scrape_swr3,
+                'antenne.bayern': scrape_antenne_bayern,
+                'bayern3': scrape_bayern3,
                 'detektor.fm': scrape_detektor_fm,
                 'byte.fm': scrape_byte_fm,
-                'Radio7': scrape_radio7,
-                'Donau3FM': scrape_donau_3_fm,
-                'Fritz': scrape_fritz,
-                'RadioKoeln': scrape_radio_koeln,
-                '1Live': scrape_1live}
+                'radio7': scrape_radio7,
+                'donau3fm': scrape_donau_3_fm,
+                'fritz': scrape_fritz,
+                'radio.koeln': scrape_radio_koeln,
+                '1live': scrape_1live}
 
     delay = 60
     lastsongs = {}
