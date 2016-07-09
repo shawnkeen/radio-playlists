@@ -86,7 +86,8 @@ def get_multiple_tags(url, xpathExpressionList, params=None):
 # cheap tag remover
 def remove_tags(text):
     """
-    Remove the tags from a html input.
+    Remove the tags from an html input.
+
     :param text: A string containing html formatted text.
     :return: A string without surrounding tags.
     """
