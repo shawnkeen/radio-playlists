@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from time import sleep
 from lxml import html
@@ -7,13 +8,26 @@ import json
 import string
 from kitchen.text.converters import getwriter
 from datetime import datetime
-# from bs4 import BeautifulSoup
-# import re
 
 __author__ = 'Shawn Keen'
 
 UTF8Writer = getwriter('utf8')
 sys.stdout = UTF8Writer(sys.stdout)
+
+
+usage = """
+Scrape the "currently playing" pages of FM or web radio stations and print the
+time, artist, and title to std out.
+
+Usage:
+    {0} [station id]
+
+    If a station id is given, the currently playing song on that station is
+    printed. Otherwise, querying and printing is repeatedly done for all known
+    stations. Program execution can be interrupted with Ctrl-C. All errors are
+    printed to std err. Printing format is <time> <artist> <title>, separated
+    by TABs.
+"""
 
 
 class Song:
@@ -65,7 +79,9 @@ def get_tag(url, xpathExpression, params=None):
 def get_multiple_tags(url, xpathExpressionList, params=None):
     """
     Perform one query on the given url, but extract multiple entries using
-    several xpath expressions.
+    several xpath expressions. Doing multiple page queries, e.g. for artist
+    and then title, would introduce inconsistency should the currently playing
+    song change in between queries.
 
     :param url: URL to fetch from
     :param xpathExpressionList: a list of xpath expressions
@@ -376,7 +392,8 @@ def print_playing_songs(stations, lastsongs):
 
     Iterate over all stations and use the associated scrape function to get
     the currently played song. The song is only printed if it does not
-    appear in the lastsongs dictionary under that station.
+    appear in the lastsongs dictionary under that station. This prevents
+    repeating a song just because it is still playing.
 
     :param stations: dictionary station name -> scrape function
     :param lastsongs: dictionary station name -> last played song
@@ -398,6 +415,10 @@ def print_playing_songs(stations, lastsongs):
                 station + "\t" + \
                 str(song)
             sys.stdout.flush()
+        # Catch all exceptions. This prevents program termination if page
+        # layout has changed and error checking in the scraper is incomplete.
+        # User interruption is not handled and we bail out the hard way on
+        # Ctrl-C.
         except Exception as e:
             sys.stderr.write('ERROR while fetching from ' + station + ": ")
             sys.stderr.flush()
@@ -424,7 +445,16 @@ def main():
     delay = 60
     lastsongs = {}
 
-    if len(sys.argv) > 1 and sys.argv[1] in stations:
+    if len(sys.argv) > 1:
+        if not sys.argv[1] in stations:
+            print usage.format(sys.argv[0])
+            print "    Known station ids:"
+            print "   ",
+            for id in stations.keys():
+                print id,
+            print ""
+            sys.exit(1)
+
         fun = stations[sys.argv[1]]
         song = fun()
         print str(song)
