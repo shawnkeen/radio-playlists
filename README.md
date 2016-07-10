@@ -10,3 +10,7 @@ in the evaluation folder.
 ```shell
 $ ./get-playlists > songs.csv
 ```
+
+Example analysis:
+
+![Dendrogram](https://raw.githubusercontent.com/shawnkeen/radio-playlists/master/evaluation/clusterdend.png "Cluster Dendrogram")
